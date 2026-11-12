@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && (request.auth.token.admin == true
+          || (exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function shopIsOpen(shopId) {
+      return exists(/databases/$(database)/documents/shops/$(shopId))
+        && get(/databases/$(database)/documents/shops/$(shopId)).data.open == true;
+    }
+
+    function ownsShop(shopId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/shops/$(shopId))
+        && get(/databases/$(database)/documents/shops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
+    function isCustomer() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'customer';
+    }
+
+    function isShop() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'shop';
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == userId
+        && request.resource.data.role in ['customer', 'shop']
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.name is string;
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email;
+      allow delete: if false;
+    }
+
+    match /shops/{shopId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.auth.uid == shopId
+        && request.resource.data.ownerId == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'shop';
+      allow update: if signedIn()
+        && request.auth.uid == shopId
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if false;
+    }
+
+    match /orders/{orderId} {
+      allow read: if signedIn()
+        && (isAdmin()
+          || resource.data.customerId == request.auth.uid
+          || (isShop() && resource.data.shopId == request.auth.uid)
+          || ownsShop(resource.data.shopId));
+      allow create: if signedIn()
+        && isCustomer()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.status == 'New request'
+        && request.resource.data.quantity is int
+        && request.resource.data.quantity > 0
+        && request.resource.data.description is string
+        && request.resource.data.requestedPickupAt is string
+        && request.resource.data.requestedPickupAt.size() >= 16
+        && request.resource.data.filestackHandle == ''
+        && request.resource.data.filestackUrl == ''
+        && shopIsOpen(request.resource.data.shopId);
+      allow update: if signedIn()
+        && (
+          (resource.data.customerId == request.auth.uid
+            && resource.data.status == 'New request'
+            && request.resource.data.customerId == resource.data.customerId
+            && request.resource.data.shopId == resource.data.shopId
+            && request.resource.data.status == resource.data.status
+            && request.resource.data.filestackHandle is string
+            && request.resource.data.filestackUrl is string
+            && ((request.resource.data.filestackUrl == ''
+                && request.resource.data.filestackHandle == '')
+              || (request.resource.data.filestackHandle.size() >= 10
+                && request.resource.data.filestackHandle.size() <= 128
+                && request.resource.data.filestackUrl.matches('https://cdn\\.filestackcontent\\.com/.*')))
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['description', 'specs', 'quantity', 'fileName', 'filePath', 'filestackHandle', 'filestackUrl', 'requestedPickupAt', 'cloudinaryPublicId', 'cloudinaryResourceType', 'cloudinaryFormat', 'updatedAt']))
+          ||
+          (resource.data.customerId == request.auth.uid
+            && resource.data.status == 'Awaiting customer'
+            && request.resource.data.customerId == resource.data.customerId
+            && request.resource.data.shopId == resource.data.shopId
+            && request.resource.data.status in ['Awaiting payment', 'Cancelled']
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'updatedAt']))
+          ||
+          (resource.data.customerId == request.auth.uid
+            && resource.data.status == 'Awaiting payment'
+            && !resource.data.keys().hasAny(['paypalOrderId'])
+            && request.resource.data.customerId == resource.data.customerId
+            && request.resource.data.shopId == resource.data.shopId
+            && request.resource.data.status == resource.data.status
+            && request.resource.data.paymentReference is string
+            && request.resource.data.paymentReference.size() >= 4
+            && request.resource.data.paymentReference.size() <= 100
+            && request.resource.data.paymentSubmittedAt is string
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['paymentReference', 'paymentSubmittedAt', 'updatedAt']))
+          ||
+          (ownsShop(resource.data.shopId)
+            && request.resource.data.customerId == resource.data.customerId
+            && request.resource.data.shopId == resource.data.shopId
+            && (
+              (resource.data.status == 'New request'
+                && request.resource.data.status == 'Awaiting customer'
+                && request.resource.data.quoteAmount is number
+                && request.resource.data.quoteAmount > 0
+                && request.resource.data.quoteNote is string
+                && request.resource.data.confirmedPickupAt is string
+                && request.resource.data.confirmedPickupAt.size() >= 16
+                && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['quoteAmount', 'quoteNote', 'confirmedPickupAt', 'status', 'updatedAt']))
+              ||
+              (resource.data.status == 'New request'
+                && request.resource.data.status == 'Cancelled'
+                && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['status', 'updatedAt']))
+              ||
+              (resource.data.status == 'Awaiting customer'
+                && request.resource.data.status == 'Awaiting customer'
+                && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['quoteAmount', 'quoteNote', 'updatedAt']))
+              ||
+              (resource.data.status == 'Awaiting payment'
+                && request.resource.data.status == 'Printing'
+                && resource.data.paymentReference is string
+                && resource.data.paymentReference.size() >= 4
+                && request.resource.data.paymentVerifiedAt is string
+                && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['status', 'paymentVerifiedAt', 'updatedAt']))
+              ||
+              (resource.data.status == 'Printing'
+                && request.resource.data.status in ['Ready for pickup', 'Cancelled']
+                && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['status', 'updatedAt']))
+              ||
+              (resource.data.status == 'Ready for pickup'
+                && request.resource.data.status in ['Completed', 'Cancelled']
+                && request.resource.data.diff(resource.data).affectedKeys()
+                  .hasOnly(['status', 'updatedAt']))
+            ))
+        );
+      allow delete: if signedIn()
+        && resource.data.customerId == request.auth.uid
+        && resource.data.status == 'New request';
+    }
+  }
+}

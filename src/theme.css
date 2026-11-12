@@ -1,0 +1,72 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import "@ionic/angular/css/core.css";
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+@import "./app/app.component.css";
+
+:root {
+  font-family: "DM Sans", sans-serif;
+  color: #2b2230;
+  background: #f6f5f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --plum: #321a48;
+  --berry: #941f50;
+  --accent: #a32959;
+  --muted: #817889;
+  --line: #e8e2ea;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: auto;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #f6f5f6;
+}
+
+body {
+  position: static;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transform: none;
+}
+
+body, button, input, textarea, select { font-family: "DM Sans", sans-serif; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible { outline: 3px solid #a3295940; outline-offset: 2px; }
+button:disabled { cursor: not-allowed; }
+
+ion-app,
+ion-app.md,
+ion-app.ios {
+  display: block;
+  position: relative;
+  inset: auto;
+  height: auto;
+  overflow: visible;
+  contain: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+ion-icon { font-size: 1.15em; }
+
+ion-button.back-button {
+  --color: var(--accent);
+  --background: transparent;
+  --background-hover: #fbf0f5;
+  --background-activated: #f8e8ef;
+}

@@ -1,0 +1,144 @@
+<section class="content-section">
+  
+  <!-- COMPACT TOOLBAR -->
+  <div class="orders-toolbar">
+    <h2>My Orders</h2>
+    <button class="add-order-btn" (click)="createOrder.emit()" aria-label="New Print Request">
+      <ion-icon name="add-outline"></ion-icon>
+    </button>
+  </div>
+  
+  <div class="orders-list" *ngIf="orders.length; else emptyOrderList">
+    <details class="order-card order-disclosure" *ngFor="let order of orders">
+      <summary class="order-summary">
+        <span class="order-summary-main">
+          <span class="order-reference">PRT-{{ order.id.slice(-6).toUpperCase() }}</span>
+          <span class="order-title">{{ order.description }}</span>
+          <span class="order-preview">{{ order.shopName }} · {{ order.quantity }} {{ order.quantity === 1 ? 'copy' : 'copies' }}</span>
+        </span>
+        <span class="status-pill" [ngClass]="statusClass(order.status)"><span></span>{{ order.status }}</span>
+        <ion-icon class="order-chevron" name="chevron-down-outline"></ion-icon>
+      </summary>
+      
+      <div class="order-details">
+        <p class="order-meta">{{ order.shopName }} · {{ order.quantity }} {{ order.quantity === 1 ? 'copy' : 'copies' }} · {{ order.specs }}</p>
+        <p class="order-meta" *ngIf="order.confirmedPickupAt"><ion-icon name="calendar-outline"></ion-icon> Pickup: {{ order.confirmedPickupAt | date:'medium' }}</p>
+        
+        <div class="quote-summary" *ngIf="order.quoteAmount"><strong>Shop quote · ₱{{ order.quoteAmount | number:'1.2-2' }}</strong><p>{{ order.quoteNote || 'Quote from the print shop.' }}</p></div>
+        
+        <div class="quote-actions" *ngIf="order.status === 'Awaiting customer' && order.quoteAmount">
+          <button class="button button-primary compact-button" (click)="respondQuote.emit({ order: order, accept: true })">Accept quote</button>
+          <button class="text-link" (click)="respondQuote.emit({ order: order, accept: false })">Decline</button>
+        </div>
+        
+        <div class="quote-summary" *ngIf="order.status === 'Awaiting payment'">
+          <strong>Payment · ₱{{ order.quoteAmount | number:'1.2-2' }}</strong>
+          <button class="button button-primary compact-button" *ngIf="!order.paymentSubmittedAt"
+            [disabled]="paypalBusyOrderId === order.id"
+            (click)="paypalCheckout.emit(order)">
+            {{ paypalBusyOrderId === order.id ? 'Connecting to PayPal…' : 'Continue to PayPal' }}
+          </button>
+          <ng-container *ngIf="!order.paypalOrderId && !order.paymentSubmittedAt">
+            <p *ngIf="shopForOrder(order.shopId)?.gcashNumber">Or send manually to {{ shopForOrder(order.shopId)?.gcashAccountName }} · {{ shopForOrder(order.shopId)?.gcashNumber }}. Confirm recipient details before sending.</p>
+            <p *ngIf="!shopForOrder(order.shopId)?.gcashNumber">Manual GCash transfer is also available if you ask the shop for payment details.</p>
+            <label class="field"><span class="field-label">GCash reference number</span><input [(ngModel)]="paymentReferences[order.id]" placeholder="Enter the reference from GCash" maxlength="100"></label>
+            <button class="button button-secondary compact-button" (click)="submitReference(order)">Submit manual payment reference</button>
+          </ng-container>
+          <p class="field-hint" *ngIf="order.paymentSubmittedAt && order.paymentProvider !== 'paypal_sandbox'">Manual transfer only. PRONTO does not charge or verify payments; the shop checks the transaction.</p>
+        </div>
+        
+        <div class="quote-summary" *ngIf="order.paymentReference">
+          <strong>{{ order.paymentProvider === 'paypal_sandbox' ? 'PayPal Sandbox payment' : 'GCash transaction' }} · reference {{ order.paymentReference }}</strong>
+          <p *ngIf="order.paymentProvider === 'paypal_sandbox'">Payment confirmed by PayPal Sandbox · {{ order.paymentVerifiedAt | date:'medium' }}. Test payment only; no real money was charged.</p>
+          <p *ngIf="order.paymentProvider !== 'paypal_sandbox'">Submitted {{ order.paymentSubmittedAt | date:'medium' }} · {{ order.paymentVerifiedAt ? 'Verified by the shop' : 'Waiting for shop verification' }}</p>
+          <p *ngIf="order.paymentVerifiedAt">Verified {{ order.paymentVerifiedAt | date:'medium' }}</p>
+        </div>
+        
+        <button class="file-link" *ngIf="order.fileName" (click)="openFile.emit(order)"><ion-icon name="document-attach-outline"></ion-icon>{{ order.fileName }}</button>
+        
+        <div class="order-card-bottom">
+          <span><ion-icon name="time-outline"></ion-icon>{{ order.createdAt | date }}</span>
+          <div class="order-actions">
+            <!-- RECEIPT BUTTON -->
+            <button class="text-link receipt-link" *ngIf="order.paymentVerifiedAt" (click)="openReceipt(order)">
+              <ion-icon name="receipt-outline"></ion-icon> View Receipt
+            </button>
+            
+            <ng-container *ngIf="order.status === 'New request'">
+              <button class="text-link" (click)="editOrder.emit(order)">Edit request</button>
+              <button class="icon-button danger" (click)="deleteOrder.emit(order)" aria-label="Delete request"><ion-icon name="trash-outline"></ion-icon></button>
+            </ng-container>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+  
+  <ng-template #emptyOrderList>
+    <div class="empty-state">
+      <span class="empty-icon"><ion-icon name="receipt-outline"></ion-icon></span>
+      <h3>No orders yet</h3>
+      <p>Your print requests and their status will show up here.</p>
+      <button class="button button-primary compact-button" (click)="createOrder.emit()">Find a print shop</button>
+    </div>
+  </ng-template>
+</section>
+
+<!-- RECEIPT MODAL (Walang nabago dito) -->
+<div class="modal-backdrop" *ngIf="selectedReceiptOrder" (click)="closeReceipt()">
+  <div class="receipt-modal" (click)="$event.stopPropagation()">
+    
+    <div class="receipt-header">
+      <ion-icon name="print-outline"></ion-icon>
+      <h2>PRONTO</h2>
+      <p>Official Print Receipt</p>
+    </div>
+
+    <div class="receipt-body">
+      <div class="receipt-row">
+        <span>Reference:</span>
+        <strong>PRT-{{ selectedReceiptOrder.id.slice(-6).toUpperCase() }}</strong>
+      </div>
+      <div class="receipt-row">
+        <span>Date Paid:</span>
+        <strong>{{ selectedReceiptOrder.paymentVerifiedAt | date:'medium' }}</strong>
+      </div>
+      <div class="receipt-row">
+        <span>Customer:</span>
+        <strong>{{ selectedReceiptOrder.customerName }}</strong>
+      </div>
+      <div class="receipt-row">
+        <span>Shop:</span>
+        <strong>{{ selectedReceiptOrder.shopName }}</strong>
+      </div>
+      
+      <div class="receipt-divider"></div>
+      
+      <div class="receipt-item">
+        <strong>{{ selectedReceiptOrder.description }}</strong>
+        <span>{{ selectedReceiptOrder.quantity }} copies · {{ selectedReceiptOrder.specs }}</span>
+      </div>
+      
+      <div class="receipt-divider"></div>
+      
+      <div class="receipt-row total-row">
+        <span>Total Paid:</span>
+        <strong>₱{{ selectedReceiptOrder.quoteAmount | number:'1.2-2' }}</strong>
+      </div>
+      
+      <div class="receipt-payment-method">
+        <ion-icon name="checkmark-circle" style="color: #14815c;"></ion-icon>
+        Paid via {{ selectedReceiptOrder.paymentProvider === 'paypal_sandbox' ? 'PayPal' : 'GCash' }} (Ref: {{ selectedReceiptOrder.paymentReference }})
+      </div>
+    </div>
+
+    <div class="receipt-footer">
+      <p>Thank you for choosing PRONTO!</p>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="button button-secondary compact-button" (click)="closeReceipt()">Close</button>
+        <button class="button button-primary compact-button" onclick="window.print()">Print / Save</button>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,98 @@
+<section class="content-section">
+  <ng-container *ngIf="!isEditing">
+    <div class="profile-hero">
+      <span class="avatar profile-hero-avatar"><ion-icon name="storefront-outline"></ion-icon></span>
+      <div class="profile-hero-info">
+        <h2>{{ shop.name }}</h2>
+        <p>Managed by {{ profile.name }}</p>
+        <span class="profile-badge">Shop Owner</span>
+      </div>
+    </div>
+
+    <div class="info-group">
+      <div class="info-group-header">
+        <h3>Shop Settings</h3>
+        <span class="status-pill" [ngClass]="shop.open ? 'status-completed' : 'status-cancelled'">
+          <span></span>{{ shop.open ? 'Open' : 'Closed' }}
+        </span>
+      </div>
+      <div class="info-list">
+        <div class="info-row">
+          <span class="info-label">Address</span>
+          <span class="info-value">{{ shop.address }}, {{ shop.city }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Services</span>
+          <span class="info-value">{{ shop.services }}</span>
+        </div>
+        <div class="info-row" *ngIf="shop.gcashNumber">
+          <span class="info-label">GCash Details</span>
+          <span class="info-value">{{ shop.gcashAccountName }} ({{ shop.gcashNumber }})</span>
+        </div>
+      </div>
+      <div class="info-group-footer">
+        <ion-button fill="outline" class="outline-button compact-button" (click)="toggleOpen.emit()">
+          {{ shop.open ? 'Pause new requests' : 'Accept new requests' }}
+        </ion-button>
+      </div>
+    </div>
+
+    <div class="info-group">
+      <div class="info-group-header">
+        <h3>Account Owner</h3>
+      </div>
+      <div class="info-list">
+        <div class="info-row">
+          <span class="info-label">Name</span>
+          <span class="info-value">{{ profile.name }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Email</span>
+          <span class="info-value">{{ profile.email }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="signout-section">
+      <button class="full-signout-btn" (click)="signOut.emit()">
+        <ion-icon name="log-out-outline"></ion-icon>
+        Sign out
+      </button>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="isEditing">
+    <div class="edit-card">
+      <h3>Shop Information</h3>
+      <div class="modal-form">
+        <label class="field"><span class="field-label">Shop Name</span><input [(ngModel)]="shopName" /></label>
+        <div class="coordinates-row">
+          <label class="field"><span class="field-label">City</span><input [(ngModel)]="shopCity" /></label>
+          <label class="field"><span class="field-label">Address</span><input [(ngModel)]="shopAddress" /></label>
+        </div>
+        <label class="field"><span class="field-label">Services Offered</span><textarea [(ngModel)]="shopServices" rows="3"></textarea></label>
+        <div class="coordinates-row">
+          <label class="field"><span class="field-label">GCash Name</span><input [(ngModel)]="shopGcashAccountName" /></label>
+          <label class="field"><span class="field-label">GCash Number</span><input [(ngModel)]="shopGcashNumber" /></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="edit-card">
+      <h3>Owner Information</h3>
+      <div class="modal-form">
+        <label class="field">
+          <span class="field-label">Full Name</span>
+          <input [(ngModel)]="editName" />
+        </label>
+      </div>
+    </div>
+
+    <div class="inline-error" *ngIf="error">{{ error }}</div>
+
+    <div class="edit-actions">
+      <ion-button class="gradient-button compact-button" (click)="submit()">Save Changes</ion-button>
+      <ion-button fill="clear" class="text-link" (click)="cancelEditing()">Cancel</ion-button>
+    </div>
+  </ng-container>
+</section>

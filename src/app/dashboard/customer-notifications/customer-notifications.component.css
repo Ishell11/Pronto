@@ -1,0 +1,55 @@
+:host { display: block; }
+
+.notification-list {
+  display: grid;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+}
+
+.notification-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  border-top: 1px solid #f1edf2;
+  color: #34283a;
+  background: white;
+  text-align: left;
+}
+
+.notification-row-copy {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.notification-row strong {
+  font-size: 11px;
+}
+
+.notification-row small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.notification-date {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+@media (max-width: 430px) {
+  .notification-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .notification-date {
+    margin-left: 18px;
+  }
+}

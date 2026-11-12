@@ -1,0 +1,19 @@
+<main class="auth-shell">
+  <div class="auth-heading">
+    <span class="eyebrow">ONE LAST STEP</span>
+    <h1>Set up your profile.</h1>
+    <p>Tell us how you'll use PRONTO.</p>
+  </div>
+  <form class="auth-form" (ngSubmit)="submit()">
+    <label class="field"><span class="field-label">Full name</span><input name="profileName" [(ngModel)]="name" placeholder="Your name" autocomplete="name" required></label>
+    <div class="role-picker">
+      <span class="field-label">I want to join as a</span>
+      <div class="role-options">
+        <button type="button" class="role-option" [class.selected]="role === 'customer'" (click)="role = 'customer'"><ion-icon name="person-outline"></ion-icon>Customer</button>
+        <button type="button" class="role-option" [class.selected]="role === 'shop'" (click)="role = 'shop'"><ion-icon name="storefront-outline"></ion-icon>Print shop</button>
+      </div>
+    </div>
+    <div class="inline-error" role="alert" *ngIf="error">{{ error }}</div>
+    <ion-button type="submit" expand="block" class="gradient-button" [disabled]="busy">{{ busy ? 'Saving…' : 'Continue' }}</ion-button>
+  </form>
+</main>

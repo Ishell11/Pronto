@@ -1,0 +1,18 @@
+<main class="welcome-shell">
+  <section class="welcome-hero">
+    <div class="brand brand-light"><span class="brand-mark"><ion-icon name="print-outline"></ion-icon></span>PRONTO</div>
+    <img class="welcome-image" src="https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?auto=format&fit=crop&w=1100&q=85" alt="A printer preparing a fresh print job">
+  </section>
+  <section class="welcome-content">
+    <span class="eyebrow">LOCAL SHOPS. LESS WAITING.</span>
+    <h1>Print smarter.<br>Pick up easier.</h1>
+    <p>Find a nearby print shop, send your files, and follow every step to pickup.</p>
+    <div class="welcome-steps">
+      <span><ion-icon name="cloud-upload-outline"></ion-icon>Send files</span>
+      <span><ion-icon name="print-outline"></ion-icon>Choose specs</span>
+      <span><ion-icon name="cube-outline"></ion-icon>Pick up</span>
+    </div>
+    <ion-button expand="block" class="gradient-button" (click)="getStarted.emit()">Get started</ion-button>
+    <ion-button expand="block" fill="outline" class="outline-button" (click)="signIn.emit()">I already have an account</ion-button>
+  </section>
+</main>

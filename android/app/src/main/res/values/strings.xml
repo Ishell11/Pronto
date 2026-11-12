@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PRONTO</string>
+    <string name="title_activity_main">PRONTO</string>
+    <string name="package_name">com.pronto.printshop</string>
+    <string name="custom_url_scheme">com.pronto.printshop</string>
+</resources>

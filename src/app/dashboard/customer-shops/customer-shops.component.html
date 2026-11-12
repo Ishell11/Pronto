@@ -1,0 +1,48 @@
+<section class="content-section customer-shops">
+  <div class="search-container">
+    <label class="search-box">
+      <ion-icon name="search-outline"></ion-icon>
+      <input type="search" [ngModel]="search" (ngModelChange)="searchChange.emit($event)" aria-label="Search print shops" placeholder="Search shops or location">
+      <button type="button" class="locate-btn-inline" (click)="locate.emit()" [disabled]="locating" title="Use my location">
+        <ion-icon name="locate-outline"></ion-icon>
+      </button>
+    </label>
+    <p class="location-msg" *ngIf="locationMessage">{{ locationMessage }}</p>
+  </div>
+
+  <div class="map-wrapper">
+    <div class="map-header">
+      <div class="map-title"><ion-icon name="map-outline"></ion-icon> Shop Map</div>
+      <span>{{ mappedShopCount }} {{ mappedShopCount === 1 ? 'shop' : 'shops' }}</span>
+    </div>
+    <div id="shops-map" #mapContainer class="map-container" role="region" aria-label="Map of searched print shops"></div>
+    <div class="map-legend-bar">
+      <span><i class="availability-dot is-available"></i>Open</span>
+      <span><i class="availability-dot is-closed"></i>Closed</span>
+      <span class="map-hint-text">Tap a pin for details.</span>
+    </div>
+  </div>
+
+  <div class="section-heading" style="margin-top: 12px;">
+    <h2>Available Shops ({{ shops.length }})</h2>
+  </div>
+
+  <div class="shop-grid" *ngIf="shops.length; else noSearchResults">
+    <article class="shop-card" *ngFor="let shop of shops" (click)="createOrder.emit(shop)">
+      <span class="shop-card-icon"><ion-icon name="storefront-outline"></ion-icon></span>
+      <div class="shop-card-main">
+        <h3>{{ shop.name }}</h3>
+        <p><ion-icon name="location-outline"></ion-icon>{{ shop.address }}, {{ shop.city }}</p>
+        <p class="shop-services">{{ shop.services }}</p>
+        <span class="distance-label" *ngIf="distanceLabel(shop) as distance">{{ distance }}</span>
+        <div class="shop-card-status">
+          <span [class.open-label]="shop.open" [class.closed-label]="!shop.open">{{ shop.open ? 'Open for requests' : 'Temporarily closed' }}</span>
+        </div>
+      </div>
+    </article>
+  </div>
+  
+  <ng-template #noSearchResults>
+    <div class="empty-state"><span class="empty-icon"><ion-icon name="storefront-outline"></ion-icon></span><h3>No print shops found</h3><p>Try another search or come back when more local shops join.</p></div>
+  </ng-template>
+</section>

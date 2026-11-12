@@ -1,0 +1,51 @@
+<section class="content-section">
+  <div class="orders-list" *ngIf="orders.length; else noShopRequests">
+    <details class="shop-order-card" *ngFor="let order of orders">
+      <summary class="shop-order-summary">
+        <span class="shop-order-summary-main">
+          <span class="order-reference">PRT-{{ order.id.slice(-6).toUpperCase() }} · {{ order.customerName }}</span>
+          <span class="shop-order-title">{{ order.description }}</span>
+        </span>
+        <span class="status-pill" [ngClass]="statusClass(order.status)"><span></span>{{ order.status }}</span>
+        <ion-icon class="shop-order-chevron" name="chevron-down-outline"></ion-icon>
+      </summary>
+      <div class="shop-order-details">
+        <p class="order-meta">{{ order.quantity }} copies · {{ order.specs }}</p>
+        <p class="order-meta">Customer requests: {{ order.requestedPickupAt | date:'medium':'Asia/Manila' }}</p>
+        <p class="order-meta" *ngIf="order.confirmedPickupAt"><ion-icon name="calendar-outline"></ion-icon> Confirmed pickup: {{ order.confirmedPickupAt | date:'medium':'Asia/Manila' }}</p>
+        <div class="quote-summary" *ngIf="order.quoteAmount"><strong>Quoted · ₱{{ order.quoteAmount | number:'1.2-2' }}</strong><p>{{ order.quoteNote || 'No additional note.' }}</p></div>
+        
+        <div class="shop-order-actions" *ngIf="order.status === 'New request'">
+          <button class="button button-primary compact-button" (click)="sendQuote.emit(order)">Review request &amp; send quote</button>
+          <button class="text-link danger-link" (click)="declineRequest.emit(order)">Decline request</button>
+        </div>
+        
+        <button class="button button-primary compact-button" *ngIf="order.status === 'Awaiting payment' && order.paymentReference" (click)="confirmPayment.emit(order)">
+          {{ order.paymentProvider === 'paypal_sandbox' ? 'Start printing · PayPal Sandbox confirmed' : 'Verify ' + order.paymentReference + ' & start printing' }}
+        </button>
+        
+        <span class="payment-verification-note" *ngIf="order.status === 'Awaiting payment'">
+          {{ !order.paymentReference ? 'Waiting for the customer to pay or submit a GCash reference.' : order.paymentProvider === 'paypal_sandbox' ? 'PayPal Sandbox confirmed this test payment. No real money was charged.' : 'Check the GCash transaction yourself before verifying.' }}
+        </span>
+        
+        <button class="file-link" *ngIf="order.fileName" (click)="openFile.emit(order)"><ion-icon name="document-attach-outline"></ion-icon>{{ order.fileName }}</button>
+        
+        <label class="status-action" *ngIf="allowedStatusChanges(order).length">
+          <span>Update status</span>
+          <select [ngModel]="order.status" (ngModelChange)="statusChange.emit({ order: order, status: $event })">
+            <option [ngValue]="order.status">{{ order.status }}</option>
+            <option *ngFor="let status of allowedStatusChanges(order)" [ngValue]="status">{{ status }}</option>
+          </select>
+        </label>
+      </div>
+    </details>
+  </div>
+  
+  <ng-template #noShopRequests>
+    <div class="empty-state">
+      <span class="empty-icon"><ion-icon name="receipt-outline"></ion-icon></span>
+      <h3>No requests yet</h3>
+      <p>New customer requests will appear here.</p>
+    </div>
+  </ng-template>
+</section>

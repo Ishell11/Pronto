@@ -1,0 +1,297 @@
+<ion-app>
+  <app-splash *ngIf="loading || showSplash"></app-splash>
+
+  <ng-container *ngIf="!loading && !showSplash && !authUser">
+    <app-welcome *ngIf="authPage === 'welcome'"
+      (getStarted)="setAuthPage('signup')"
+      (signIn)="setAuthPage('login')"></app-welcome>
+    <app-login *ngIf="authPage === 'login'"
+      [busy]="busy"
+      [error]="error"
+      [rememberMe]="rememberMe"
+      (submitLogin)="useLogin($event)"
+      (forgotPassword)="setAuthPage('reset')"
+      (createAccount)="setAuthPage('signup')"
+      (back)="setAuthPage('welcome')"></app-login>
+    <app-signup *ngIf="authPage === 'signup'"
+      [busy]="busy"
+      [error]="error"
+      (submitSignup)="useSignup($event)"
+      (signIn)="setAuthPage('login')"
+      (back)="setAuthPage('welcome')"></app-signup>
+    <app-reset-password *ngIf="authPage === 'reset'"
+      [busy]="busy"
+      [error]="error"
+      [notice]="notice"
+      (submitEmail)="useResetEmail($event)"
+      (backToSignIn)="setAuthPage('login')"
+      (back)="setAuthPage('welcome')"></app-reset-password>
+  </ng-container>
+
+  <app-profile-setup *ngIf="!loading && !showSplash && authUser && !profile"
+    [busy]="busy"
+    [error]="error"
+    [initialName]="name"
+    [initialRole]="role"
+    (submitProfile)="useProfileDetails($event)"
+    (refreshAccess)="refreshProfileAccess()"></app-profile-setup>
+
+  <div class="workspace" *ngIf="!loading && !showSplash && authUser && profile" [class.shop-workspace]="isShopAccount">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark"><ion-icon name="print-outline"></ion-icon></span>PRONTO</div>
+      <div class="sidebar-account">
+        <strong>{{ currentShop?.name || profile.name }}</strong>
+        <span>{{ isAdmin && adminPage ? 'Administrator workspace' : isAdmin && !adminPage ? 'Customer preview mode' : isShopAccount ? 'Print shop workspace' : 'Customer account' }}</span>
+        <small *ngIf="currentShop">{{ currentShop.city }}</small>
+      </div>
+      <nav class="side-nav">
+        <ng-container *ngIf="(!isShopAccount && !adminPage) || (isAdmin && !adminPage)">
+          <button class="nav-item" [class.active]="customerPage === 'Home'" (click)="navigateToCustomerPage('Home')"><ion-icon name="home-outline"></ion-icon>Home</button>
+          <button class="nav-item" [class.active]="customerPage === 'Find Shops'" (click)="navigateToCustomerPage('Find Shops')"><ion-icon name="storefront-outline"></ion-icon>Find Shops</button>
+          <button class="nav-item" [class.active]="customerPage === 'My Orders'" (click)="navigateToCustomerPage('My Orders')"><ion-icon name="receipt-outline"></ion-icon>My Orders</button>
+          <button class="nav-item" [class.active]="customerPage === 'Notifications'" (click)="navigateToCustomerPage('Notifications')"><ion-icon name="notifications-outline"></ion-icon>Notifications</button>
+          <button class="nav-item" [class.active]="customerPage === 'Profile'" (click)="navigateToCustomerPage('Profile')"><ion-icon name="person-outline"></ion-icon>Profile</button>
+        </ng-container>
+        
+        <ng-container *ngIf="isShopAccount">
+          <button class="nav-item" [class.active]="shopPage === 'Dashboard'" (click)="navigateToShopPage('Dashboard')"><ion-icon name="grid-outline"></ion-icon>Dashboard</button>
+          <button class="nav-item" [class.active]="shopPage === 'Requests'" (click)="navigateToShopPage('Requests')"><ion-icon name="receipt-outline"></ion-icon>Requests</button>
+          <button class="nav-item" [class.active]="shopPage === 'Services'" (click)="navigateToShopPage('Services')"><ion-icon name="pricetag-outline"></ion-icon>Services</button>
+          <button class="nav-item" [class.active]="shopPage === 'Earnings'" (click)="navigateToShopPage('Earnings')"><ion-icon name="wallet-outline"></ion-icon>Earnings</button>
+          <button class="nav-item" [class.active]="shopPage === 'Shop Profile'" (click)="navigateToShopPage('Shop Profile')"><ion-icon name="storefront-outline"></ion-icon>Shop Profile</button>
+        </ng-container>
+
+        <button class="nav-item admin-nav" *ngIf="isAdmin && adminPage" [class.active]="adminPage" (click)="setAdminPage(true)"><ion-icon name="analytics-outline"></ion-icon>Admin overview</button>
+        <button class="nav-item" *ngIf="isAdmin && adminPage" (click)="setAdminPage(false)"><ion-icon name="eye-outline"></ion-icon>Preview as Customer</button>
+        <button class="nav-item" *ngIf="isAdmin && !adminPage" (click)="setAdminPage(true)"><ion-icon name="arrow-back-outline"></ion-icon>Back to Admin</button>
+      </nav>
+      <div class="sidebar-user">
+        <span class="avatar">{{ profile.name.charAt(0).toUpperCase() }}</span>
+        <span class="sidebar-user-info"><strong>{{ profile.name }}</strong><small>{{ profile.email }}</small></span>
+        <button class="icon-button" aria-label="Sign out" (click)="signOut()"><ion-icon name="log-out-outline"></ion-icon></button>
+      </div>
+    </aside>
+
+    <main class="workspace-main">
+      <header class="topbar">
+        <div class="topbar-brand">
+          <img src="logo/logo.png" alt="PRONTO" class="topbar-logo" />
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button topbar-edit-btn" 
+                  *ngIf="customerPage === 'Profile' && !adminPage && !isShopAccount" 
+                  (click)="customerProfileComp?.startEditing()" 
+                  aria-label="Edit Profile">
+            <ion-icon name="create-outline"></ion-icon>
+          </button>
+
+          <button class="icon-button topbar-edit-btn" 
+                  *ngIf="shopPage === 'Shop Profile' && !adminPage && isShopAccount" 
+                  (click)="shopProfileComp?.startEditing()" 
+                  aria-label="Edit Shop Profile">
+            <ion-icon name="create-outline"></ion-icon>
+          </button>
+
+          <button class="notification-button" aria-label="Notifications" (click)="notificationsOpen = !notificationsOpen">
+            <ion-icon name="notifications-outline"></ion-icon><span class="notification-count" *ngIf="notificationOrders.length">{{ notificationOrders.length }}</span>
+          </button>
+          <span class="avatar small-avatar">{{ profile.name.charAt(0).toUpperCase() }}</span>
+        </div>
+      </header>
+      <div class="notification-panel" *ngIf="notificationsOpen">
+        <div class="notification-heading"><strong>Recent updates</strong><button class="text-link" (click)="notificationsOpen = false">Close</button></div>
+        <button class="notification-item" *ngFor="let order of notificationOrders.slice(0, 5)" (click)="openNotifications()">
+          <span class="notification-dot"></span><span><strong>PRT-{{ order.id.slice(-6).toUpperCase() }}</strong><small>{{ notificationText(order) }}</small></span>
+        </button>
+        <p class="notification-empty" *ngIf="!notificationOrders.length">{{ isShopAccount ? 'No new customer requests or payment references.' : 'No order updates yet. Updates will appear here.' }}</p>
+      </div>
+
+      <div class="page-content">
+        <div class="page-error" role="alert" *ngIf="error"><span>{{ error }}</span><button (click)="error = ''" aria-label="Dismiss"><ion-icon name="close-outline"></ion-icon></button></div>
+        <div class="page-notice" role="status" *ngIf="notice"><span>{{ notice }}</span><button (click)="notice = ''" aria-label="Dismiss"><ion-icon name="close-outline"></ion-icon></button></div>
+
+        <ng-container *ngIf="!isShopAccount && !adminPage || (isAdmin && !adminPage)">
+          <app-customer-home *ngIf="customerPage === 'Home'"
+            [profileName]="profile.name"
+            [search]="search"
+            [latestOrder]="latestOrder || null"
+            [visibleShops]="shopsSortedByDistance"
+            [shops]="shops"
+            [locationMessage]="locationMessage"
+            [locating]="locating"
+            [paypalBusyOrderId]="paypalBusyOrderId"
+            (searchChange)="search = $event"
+            (findShops)="navigateToCustomerPage('Find Shops')"
+            (showOrders)="navigateToCustomerPage('My Orders')"
+            (createOrder)="openOrderForm()"
+            (editOrder)="openOrderForm($event)"
+            (openFile)="openOrderFile($event)"
+            (respondQuote)="respondToQuote($event.order, $event.accept)"
+            (openShopOrder)="openOrderFormForShop($event)"
+            (locate)="locateCustomer()"
+            (submitPayment)="submitPaymentReference($event.order, $event.reference)"
+            (paypalCheckout)="startPayPalCheckout($event)"></app-customer-home>
+
+          <app-customer-shops *ngIf="customerPage === 'Find Shops'"
+            [shops]="shopsSortedByDistance"
+            [search]="search"
+            [locationMessage]="locationMessage"
+            [locating]="locating"
+            [customerLatitude]="customerLatitude"
+            [customerLongitude]="customerLongitude"
+            (searchChange)="search = $event"
+            (locate)="locateCustomer()"
+            (createOrder)="openOrderFormForShop($event)"></app-customer-shops>
+
+          <app-customer-orders *ngIf="customerPage === 'My Orders'"
+            [orders]="orders"
+            [shops]="shops"
+            [paymentReferences]="paymentReferences"
+            [paypalBusyOrderId]="paypalBusyOrderId"
+            (createOrder)="openOrderForm()"
+            (editOrder)="openOrderForm($event)"
+            (openFile)="openOrderFile($event)"
+            (respondQuote)="respondToQuote($event.order, $event.accept)"
+            (submitPayment)="submitPaymentReference($event.order, $event.reference)"
+            (paypalCheckout)="startPayPalCheckout($event)"
+            (deleteOrder)="deleteOrder($event)"></app-customer-orders>
+
+          <app-customer-notifications *ngIf="customerPage === 'Notifications'"
+            [orders]="notificationOrders"
+            (openOrders)="navigateToCustomerPage('My Orders')"></app-customer-notifications>
+          
+          <app-customer-profile #customerProfileComp *ngIf="customerPage === 'Profile'"
+            [profile]="profile"
+            [isAdmin]="isAdmin"
+            [currentShop]="currentShop"
+            (saveProfile)="saveProfileChanges($event)"
+            (signOut)="signOut()"></app-customer-profile>
+        </ng-container>
+
+        <app-admin-home *ngIf="isAdmin && adminPage"
+          [today]="today"
+          [shops]="shops"
+          [orders]="orders"
+          [users]="users"
+          [openShopCount]="openShopCount"
+          [needsAttentionCount]="newRequestCount + countOrders('Awaiting payment')"
+          (deleteAccount)="adminDeleteUser($event)"
+          (toggleShop)="adminToggleShop($event)"></app-admin-home>
+
+        <ng-container *ngIf="isShopAccount && !adminPage">
+          <app-shop-home *ngIf="shopPage === 'Dashboard'"
+            [profileName]="profile.name"
+            [today]="today"
+            [currentShop]="currentShop"
+            [orders]="orders"
+            [activeOrders]="activeOrders"
+            [newRequestCount]="newRequestCount"
+            (createShop)="openShopForm()"
+            (toggleOpen)="toggleShopOpen()"
+            (showRequests)="navigateToShopPage('Requests')"
+            (sendQuote)="openQuoteForm($event)"
+            (declineRequest)="declineRequest($event)"
+            (confirmPayment)="confirmPaymentReceived($event)"
+            (statusChange)="updateStatus($event.order, $event.status)"></app-shop-home>
+          <app-shop-requests *ngIf="currentShop && shopPage === 'Requests'"
+            [orders]="orders"
+            (sendQuote)="openQuoteForm($event)"
+            (declineRequest)="declineRequest($event)"
+            (confirmPayment)="confirmPaymentReceived($event)"
+            (openFile)="openOrderFile($event)"
+            (statusChange)="updateStatus($event.order, $event.status)"></app-shop-requests>
+          <app-shop-services *ngIf="currentShop && shopPage === 'Services'"
+            [shop]="currentShop"
+            (editShop)="openShopForm()"></app-shop-services>
+          <app-shop-earnings *ngIf="currentShop && shopPage === 'Earnings'"
+            [orders]="orders"></app-shop-earnings>
+          
+          <app-shop-profile #shopProfileComp *ngIf="currentShop && shopPage === 'Shop Profile'"
+            [profile]="profile" 
+            [shop]="currentShop"
+            (saveProfile)="saveProfileChanges($event)" 
+            (toggleOpen)="toggleShopOpen()" 
+            (signOut)="signOut()"></app-shop-profile>
+        </ng-container>
+      </div>
+
+      <nav class="mobile-nav" *ngIf="(!isShopAccount && !adminPage) || (isAdmin && !adminPage)">
+        <button class="mobile-nav-item" [class.active]="customerPage === 'Home'" (click)="navigateToCustomerPage('Home')"><ion-icon name="home-outline"></ion-icon><span>Home</span></button>
+        <button class="mobile-nav-item" [class.active]="customerPage === 'Find Shops'" (click)="navigateToCustomerPage('Find Shops')"><ion-icon name="storefront-outline"></ion-icon><span>Find Shops</span></button>
+        <button class="mobile-nav-item" [class.active]="customerPage === 'My Orders'" (click)="navigateToCustomerPage('My Orders')"><ion-icon name="receipt-outline"></ion-icon><span>Orders</span></button>
+        <button class="mobile-nav-item" [class.active]="customerPage === 'Notifications'" (click)="navigateToCustomerPage('Notifications')"><ion-icon name="notifications-outline"></ion-icon><span>Updates</span></button>
+        <button class="mobile-nav-item" [class.active]="customerPage === 'Profile'" (click)="navigateToCustomerPage('Profile')"><ion-icon name="person-outline"></ion-icon><span>Profile</span></button>
+      </nav>
+      <nav class="mobile-nav" *ngIf="isShopAccount && !adminPage">
+        <button class="mobile-nav-item" [class.active]="shopPage === 'Dashboard'" (click)="navigateToShopPage('Dashboard')"><ion-icon name="grid-outline"></ion-icon><span>Dashboard</span></button>
+        <button class="mobile-nav-item" [class.active]="shopPage === 'Requests'" (click)="navigateToShopPage('Requests')"><ion-icon name="receipt-outline"></ion-icon><span>Requests</span></button>
+        <button class="mobile-nav-item" [class.active]="shopPage === 'Services'" (click)="navigateToShopPage('Services')"><ion-icon name="pricetag-outline"></ion-icon><span>Services</span></button>
+        <button class="mobile-nav-item" [class.active]="shopPage === 'Earnings'" (click)="navigateToShopPage('Earnings')"><ion-icon name="wallet-outline"></ion-icon><span>Earnings</span></button>
+        <button class="mobile-nav-item" [class.active]="shopPage === 'Shop Profile'" (click)="navigateToShopPage('Shop Profile')"><ion-icon name="storefront-outline"></ion-icon><span>Shop</span></button>
+      </nav>
+      <nav class="mobile-nav" *ngIf="adminPage">
+        <button class="mobile-nav-item active"><ion-icon name="analytics-outline"></ion-icon><span>Overview</span></button>
+        <button class="mobile-nav-item" (click)="setAdminPage(false)"><ion-icon name="eye-outline"></ion-icon><span>Preview</span></button>
+      </nav>
+    </main>
+  </div>
+
+  <div class="admin-preview-banner" *ngIf="isAdmin && !adminPage">
+    <span><ion-icon name="eye-outline"></ion-icon> Viewing as Customer</span>
+    <button (click)="setAdminPage(true)">Return to Admin</button>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="modal" (click)="closeModal()">
+    <section class="modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <div class="modal-heading">
+        <h2>{{ modal === 'order' ? (editingOrder ? 'Edit print request' : 'Start a print request') : modal === 'quote' ? 'Review request & send quote' : (currentShop ? 'Edit shop profile' : 'Set up your print shop') }}</h2>
+        <ion-button fill="clear" aria-label="Close" (click)="closeModal()"><ion-icon slot="icon-only" name="close-outline"></ion-icon></ion-button>
+      </div>
+      <div class="empty-state modal-empty" *ngIf="modal === 'order' && !orderShops.length">
+        <span class="empty-icon"><ion-icon name="storefront-outline"></ion-icon></span><h3>No shops accepting requests</h3>
+        <p>There are no open print shops to choose right now. Try browsing the shop list later.</p>
+        <ion-button class="gradient-button compact-button" (click)="closeModal(); navigateToCustomerPage('Find Shops')">Browse shops</ion-button>
+      </div>
+      <form class="modal-form" *ngIf="modal === 'order' && orderShops.length" (ngSubmit)="saveOrder()">
+        <label class="field"><span class="field-label">Choose a print shop</span><select name="shopId" [(ngModel)]="orderShopId" required><option *ngFor="let shop of orderShops" [value]="shop.id">{{ shop.name }} — {{ shop.city }}{{ shop.open ? '' : ' (closed; existing request)' }}</option></select></label>
+        <label class="field"><span class="field-label">What do you need printed?</span><input name="description" [(ngModel)]="orderDescription" placeholder="e.g. Research paper" required maxlength="100"></label>
+        <label class="field"><span class="field-label">Print specifications</span><textarea name="specs" [(ngModel)]="orderSpecs" placeholder="Paper size, color, binding, single/double-sided…" required maxlength="500" rows="3"></textarea></label>
+        <label class="field"><span class="field-label">Number of copies</span><input name="quantity" type="number" [(ngModel)]="orderQuantity" min="1" max="1000" required></label>
+        <label class="field"><span class="field-label">Requested pickup date and time</span><input name="requestedPickupAt" type="datetime-local" [(ngModel)]="requestedPickupAt" [min]="minPickupDateTime" required></label>
+        <label class="upload-field"><ion-icon name="document-attach-outline"></ion-icon><span>{{ orderFile?.name || (editingOrder?.fileName ? 'Current file: ' + editingOrder?.fileName : 'Attach PDF, JPG or PNG (max 20 MB)') }}</span><input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" (change)="onFileSelected($event)"></label>
+        <p class="field-hint">Attach a PDF, JPG, or PNG file for your selected print shop.</p>
+        <div class="inline-error" *ngIf="error">{{ error }}</div>
+        <ion-button type="submit" expand="block" class="gradient-button" [disabled]="busy">{{ busy ? 'Saving request…' : editingOrder ? 'Save changes' : 'Send print request' }}</ion-button>
+      </form>
+      <form class="modal-form" *ngIf="modal === 'shop'" (ngSubmit)="saveShop()">
+        <label class="field"><span class="field-label">Shop name</span><input name="shopName" [(ngModel)]="shopName" placeholder="Your print shop name" required maxlength="100"></label>
+        <label class="field"><span class="field-label">City / neighborhood</span><input name="city" [(ngModel)]="shopCity" placeholder="e.g. Quezon City" required maxlength="80"></label>
+        <label class="field"><span class="field-label">Shop address</span><input name="address" [(ngModel)]="shopAddress" placeholder="Street, barangay, city" required maxlength="200"></label>
+        
+        <button class="button button-secondary locate-btn" type="button" (click)="locateShop()">
+          <ion-icon name="locate-outline"></ion-icon> Use this device's location
+        </button>
+
+        <div class="coordinates-row">
+          <label class="field"><span class="field-label">Latitude</span><input name="latitude" type="number" [(ngModel)]="shopLatitude" min="-90" max="90" step="any" placeholder="14.5995"></label>
+          <label class="field"><span class="field-label">Longitude</span><input name="longitude" type="number" [(ngModel)]="shopLongitude" min="-180" max="180" step="any" placeholder="120.9842"></label>
+        </div>
+        <label class="field"><span class="field-label">Services</span><textarea name="services" [(ngModel)]="shopServices" placeholder="B&W, color, binding, large format…" required maxlength="300" rows="3"></textarea></label>
+        <label class="field"><span class="field-label">GCash account name</span><input name="gcashAccountName" [(ngModel)]="shopGcashAccountName" maxlength="100" placeholder="Name shown in GCash"></label>
+        <label class="field"><span class="field-label">GCash number</span><input name="gcashNumber" [(ngModel)]="shopGcashNumber" maxlength="30" placeholder="09XXXXXXXXX"></label>
+        <p class="field-hint">GCash is a manual transfer arrangement, not in-app processing. Only enter a number intended to receive customer payments.</p>
+        <div class="inline-error" *ngIf="error">{{ error }}</div>
+        <ion-button type="submit" expand="block" class="gradient-button" [disabled]="busy">{{ busy ? 'Saving…' : 'Save shop profile' }}</ion-button>
+      </form>
+      <form class="modal-form" *ngIf="modal === 'quote' && quoteOrder" (ngSubmit)="sendQuote()">
+        <div class="quote-request"><strong>{{ quoteOrder.description }}</strong><span>{{ quoteOrder.customerName }} · {{ quoteOrder.quantity }} copies</span><p>{{ quoteOrder.specs }}</p><button class="file-link" type="button" *ngIf="quoteOrder.fileName" (click)="openOrderFile(quoteOrder)"><ion-icon name="document-attach-outline"></ion-icon>{{ quoteOrder.fileName }}</button></div>
+        <label class="field"><span class="field-label">Total quote (PHP)</span><input name="quoteAmount" type="number" [(ngModel)]="quoteAmount" min="0.01" step="0.01" placeholder="0.00" required></label>
+        <label class="field"><span class="field-label">Confirmed pickup date and time</span><input name="confirmedPickupAt" type="datetime-local" [(ngModel)]="confirmedPickupAt" [min]="minPickupDateTime" required></label>
+        <label class="field"><span class="field-label">Note for customer</span><textarea name="quoteNote" [(ngModel)]="quoteNote" placeholder="Price breakdown, estimated turnaround, pickup details…" maxlength="500" rows="3"></textarea></label>
+        <p class="field-hint">The selected pickup time becomes the confirmed appointment after the customer accepts. GCash transfers are manual and must be verified by the shop.</p>
+        <div class="inline-error" *ngIf="error">{{ error }}</div>
+        <ion-button type="submit" expand="block" class="gradient-button" [disabled]="busy">{{ busy ? 'Sending quote…' : 'Send quote to customer' }}</ion-button>
+      </form>
+    </section>
+  </div>
+</ion-app>

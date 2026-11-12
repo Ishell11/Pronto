@@ -1,0 +1,31 @@
+<section class="content-section" *ngIf="shop">
+  
+  <div class="info-group">
+    <div class="info-row">
+      <div class="info-icon">
+        <ion-icon name="pricetag-outline"></ion-icon>
+      </div>
+      <div class="info-content">
+        <span class="info-label">Services Offered</span>
+        <span class="info-value">{{ shop.services }}</span>
+      </div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-icon">
+        <ion-icon name="location-outline"></ion-icon>
+      </div>
+      <div class="info-content">
+        <span class="info-label">Shop Location</span>
+        <span class="info-value">{{ shop.address }}, {{ shop.city }}</span>
+      </div>
+    </div>
+
+    <div class="info-footer">
+      <button class="button button-secondary compact-button" (click)="editShop.emit()">
+        <ion-icon name="create-outline"></ion-icon> Edit Details
+      </button>
+    </div>
+  </div>
+
+</section>

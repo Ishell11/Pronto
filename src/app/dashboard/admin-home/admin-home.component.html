@@ -1,0 +1,113 @@
+<section class="content-section">
+  <div class="page-title-row">
+    <div>
+      <span class="eyebrow">PLATFORM ADMINISTRATION</span>
+      <h1>The whole marketplace, in view.</h1>
+      <p>Live overview · {{ today | date:'medium' }}</p>
+    </div>
+  </div>
+
+  <div class="stat-grid admin-stat-grid">
+    <article class="stat-card"><span>Print shops</span><strong>{{ shops.length }}</strong><small>Registered listings</small></article>
+    <article class="stat-card"><span>Open shops</span><strong>{{ openShopCount }}</strong><small>Accepting requests</small></article>
+    <article class="stat-card"><span>Total Accounts</span><strong>{{ users.length }}</strong><small>Customers & Shop Owners</small></article>
+    <article class="stat-card"><span>Print requests</span><strong>{{ orders.length }}</strong><small>All recorded orders</small></article>
+  </div>
+
+  <div class="section-heading" style="margin-top: 20px;">
+    <h2>User Accounts ({{ users.length }})</h2>
+  </div>
+  <div class="admin-table-container">
+    <table class="admin-table" *ngIf="users.length; else noUsers">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users">
+          <td>
+            <div class="user-cell">
+              <span class="avatar small-avatar">{{ (user.name || 'U').charAt(0).toUpperCase() }}</span>
+              <strong>{{ user.name || 'Unknown User' }}</strong>
+            </div>
+          </td>
+          <td>{{ user.email || 'No email' }}</td>
+          <td>
+            <span class="status-pill" [ngClass]="user.role === 'admin' ? 'status-printing' : user.role === 'shop' ? 'status-awaiting-payment' : 'status-completed'">
+              {{ user.role | titlecase }}
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <button class="icon-button danger" (click)="deleteAccount.emit(user)" *ngIf="user.role !== 'admin'" title="Delete Account">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #noUsers>
+      <div class="empty-state"><span class="empty-icon"><ion-icon name="person-outline"></ion-icon></span><h3>No users yet</h3></div>
+    </ng-template>
+  </div>
+
+  <div class="section-heading" style="margin-top: 20px;">
+    <h2>Shop Management ({{ shops.length }})</h2>
+  </div>
+  <div class="admin-table-container">
+    <table class="admin-table" *ngIf="shops.length; else noAdminShops">
+      <thead>
+        <tr>
+          <th>Shop Name</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let shop of shops">
+          <td>
+            <div class="user-cell">
+              <span class="shop-card-icon small-icon"><ion-icon name="storefront-outline"></ion-icon></span>
+              <strong>{{ shop.name }}</strong>
+            </div>
+          </td>
+          <td>{{ shop.address }}, {{ shop.city }}</td>
+          <td>
+            <span class="status-pill" [ngClass]="shop.open ? 'status-completed' : 'status-cancelled'">
+              <span></span>{{ shop.open ? 'Open' : 'Closed' }}
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <button class="text-link" (click)="toggleShop.emit(shop)">{{ shop.open ? 'Close' : 'Open' }}</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <ng-template #noAdminShops>
+      <div class="empty-state"><span class="empty-icon"><ion-icon name="storefront-outline"></ion-icon></span><h3>No shops registered yet</h3></div>
+    </ng-template>
+  </div>
+
+  <div class="section-heading" style="margin-top: 20px;">
+    <h2>Recent Platform Activity</h2>
+  </div>
+  <div class="orders-list" *ngIf="orders.length; else noPlatformActivity">
+    <article class="shop-order-card" *ngFor="let order of orders.slice(0, 5)">
+      <div class="order-card-top">
+        <div>
+          <span class="order-reference">PRT-{{ order.id.slice(-6).toUpperCase() }} · {{ order.customerName }}</span>
+          <h3>{{ order.description }}</h3>
+        </div>
+        <span class="status-pill" [ngClass]="statusClass(order.status)"><span></span>{{ order.status }}</span>
+      </div>
+      <p class="order-meta">{{ order.shopName }} · {{ order.quantity }} {{ order.quantity === 1 ? 'copy' : 'copies' }}</p>
+    </article>
+  </div>
+  <ng-template #noPlatformActivity>
+    <div class="empty-state"><span class="empty-icon"><ion-icon name="analytics-outline"></ion-icon></span><h3>No platform activity yet</h3></div>
+  </ng-template>
+</section>

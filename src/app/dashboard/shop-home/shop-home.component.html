@@ -1,0 +1,110 @@
+<section class="content-section">
+  
+  <div class="empty-state" *ngIf="!currentShop; else hasShop">
+    <span class="empty-icon"><ion-icon name="storefront-outline"></ion-icon></span>
+    <h3>Set up your print shop</h3>
+    <p>Create your shop profile to start receiving print requests from customers.</p>
+    <button class="button button-primary compact-button" (click)="createShop.emit()">Create Shop Profile</button>
+  </div>
+
+  <ng-template #hasShop>
+    
+    <div class="shop-hero">
+      <div class="hero-header">
+        <div>
+          <span class="eyebrow text-white">{{ greeting }}</span>
+          <h1>{{ currentShop?.name }}</h1>
+        </div>
+        <button class="status-toggle-btn" [class.is-closed]="!currentShop?.open" (click)="toggleOpen.emit()">
+          <span class="dot"></span>
+          {{ currentShop?.open ? 'Open' : 'Closed' }}
+        </button>
+      </div>
+      <div class="hero-icon-bg">
+        <ion-icon name="storefront-outline"></ion-icon>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <article class="stat-card">
+        <span>New Requests</span>
+        <strong [style.color]="newRequestCount > 0 ? '#a32959' : 'var(--plum)'">{{ newRequestCount }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>Active Jobs</span>
+        <strong>{{ productionQueueOrders.length }}</strong>
+      </article>
+      <article class="stat-card">
+        <span>For Pickup</span>
+        <strong>{{ readyForPickupCount }}</strong>
+      </article>
+    </div>
+
+    <div class="section-heading" style="margin-top: 6px;">
+      <h2>Pickup Schedule</h2>
+    </div>
+    
+    <div class="calendar-widget">
+      <div class="calendar-header">
+        <button class="icon-btn" (click)="changeCalendarMonth(-1)"><ion-icon name="chevron-back-outline"></ion-icon></button>
+        <span class="calendar-month">{{ calendarMonth | date:'MMMM yyyy' }}</span>
+        <button class="icon-btn" (click)="changeCalendarMonth(1)"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+      </div>
+      
+      <div class="calendar-grid">
+        <span class="week-day" *ngFor="let day of weekDays">{{ day }}</span>
+        <button class="calendar-day" 
+                *ngFor="let d of calendarDays" 
+                [class.out-of-month]="!d.inCurrentMonth"
+                [class.is-today]="d.isToday"
+                [class.is-selected]="d.isSelected"
+                (click)="selectCalendarDate(d.date)">
+          {{ d.date.getDate() }}
+          <span class="dot" *ngIf="d.orders.length > 0"></span>
+        </button>
+      </div>
+
+      <div class="selected-date-orders">
+        <span class="selected-date-label">Pickups for {{ selectedCalendarDate | date:'mediumDate' }}</span>
+        <div class="pickup-list" *ngIf="selectedPickupOrders.length > 0; else noPickups">
+          <div class="pickup-item" *ngFor="let order of selectedPickupOrders" (click)="showRequests.emit()">
+            <div class="pickup-info">
+              <strong>{{ order.description }}</strong>
+              <span>{{ order.customerName }} · {{ order.quantity }} copies</span>
+            </div>
+            <span class="pickup-time">{{ order.confirmedPickupAt | date:'shortTime' }}</span>
+          </div>
+        </div>
+        <ng-template #noPickups>
+          <p class="no-pickups-text">No pickups scheduled for this day.</p>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="section-heading" style="margin-top: 10px;">
+      <h2>In Production</h2>
+      <button type="button" class="text-link" (click)="showRequests.emit()">View all</button>
+    </div>
+
+    <div class="orders-list" *ngIf="productionQueueOrders.length > 0; else noActiveJobs">
+      <div class="job-card" *ngFor="let order of productionQueueOrders.slice(0, 3)" (click)="showRequests.emit()">
+        <div class="job-header">
+          <div>
+            <span class="order-reference">PRT-{{ order.id.slice(-6).toUpperCase() }}</span>
+            <h3>{{ order.description }}</h3>
+            <p class="order-meta">{{ order.customerName }} · {{ order.quantity }} {{ order.quantity === 1 ? 'copy' : 'copies' }}</p>
+          </div>
+          <span class="status-pill" [ngClass]="statusClass(order.status)"><span></span>{{ order.status }}</span>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noActiveJobs>
+      <div class="empty-state" style="padding: 20px;">
+        <h3>Production queue is clear</h3>
+        <p>Jobs currently printing will appear here.</p>
+      </div>
+    </ng-template>
+
+  </ng-template>
+</section>

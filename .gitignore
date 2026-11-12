@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.angular/
+.firebase/
+functions/node_modules/
+functions/lib/
+functions/.env*
+npm-debug.log*

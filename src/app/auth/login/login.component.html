@@ -1,0 +1,30 @@
+<main class="auth-shell">
+  <ion-button fill="clear" class="back-button" aria-label="Back" (click)="back.emit()">
+    <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+  </ion-button>
+  <div class="auth-heading">
+    <span class="eyebrow">YOUR PRINT WORKSPACE</span>
+    <h1>Welcome back.</h1>
+    <p>Sign in to continue where you left off.</p>
+  </div>
+  <form class="auth-form" (ngSubmit)="submit()">
+    <label class="field">
+      <span class="field-label">Email address</span>
+      <span class="field-control"><input name="email" [(ngModel)]="email" type="email" placeholder="you@example.com" autocomplete="email" required><ion-icon name="mail-outline"></ion-icon></span>
+    </label>
+    <label class="field">
+      <span class="field-label">Password</span>
+      <span class="field-control"><input name="password" [(ngModel)]="password" [type]="showPassword ? 'text' : 'password'" placeholder="Your password" autocomplete="current-password" required><button type="button" class="inline-icon-button" (click)="showPassword = !showPassword" aria-label="Toggle password visibility"><ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon></button></span>
+    </label>
+    <div class="remember-bar">
+      <label class="check-row remember-row"><input type="checkbox" [(ngModel)]="rememberMe" name="rememberMe"><span>Remember me</span></label>
+      <button type="button" class="text-link forgot-link" (click)="forgotPassword.emit()">Forgot password?</button>
+    </div>
+    <div class="inline-error" role="alert" *ngIf="error">{{ error }}</div>
+    <ion-button type="submit" expand="block" class="gradient-button auth-submit" [disabled]="busy">
+      <ion-spinner *ngIf="busy" name="crescent"></ion-spinner>
+      <ng-container *ngIf="!busy">Sign in</ng-container>
+    </ion-button>
+  </form>
+  <div class="auth-switch">New to PRONTO? <button class="text-link" (click)="createAccount.emit()">Create Account</button></div>
+</main>

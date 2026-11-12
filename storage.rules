@@ -1,0 +1,51 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && (request.auth.token.admin == true
+          || (firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+            && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function isOrderShop(customerId, orderId) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/orders/$(orderId))
+        && firestore.get(/databases/(default)/documents/orders/$(orderId)).data.customerId == customerId
+        && firestore.exists(/databases/(default)/documents/shops/$(firestore.get(/databases/(default)/documents/orders/$(orderId)).data.shopId))
+        && firestore.get(/databases/(default)/documents/shops/$(firestore.get(/databases/(default)/documents/orders/$(orderId)).data.shopId)).data.ownerId == request.auth.uid;
+    }
+
+    function canReadOrderFile(customerId, orderId) {
+      return signedIn()
+        && (request.auth.uid == customerId || isAdmin() || isOrderShop(customerId, orderId));
+    }
+
+    function canUploadOrderFile(customerId) {
+      return signedIn()
+        && request.auth.uid == customerId
+        && request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType.matches('application/pdf|image/jpeg|image/png');
+    }
+
+    match /orders/{customerId}/{orderId}/{fileName} {
+      allow read: if canReadOrderFile(customerId, orderId);
+      allow create, update: if canUploadOrderFile(customerId);
+      allow delete: if signedIn() && request.auth.uid == customerId;
+    }
+
+    match /uploads/{customerId}/{orderId}/{fileName} {
+      allow read: if canReadOrderFile(customerId, orderId);
+      allow create, update: if canUploadOrderFile(customerId);
+      allow delete: if signedIn() && request.auth.uid == customerId;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,96 @@
+<section class="content-section">
+  
+
+  <div class="stat-grid earnings-grid">
+    <article class="stat-card">
+      <span>Completed Sales</span>
+      <strong>₱{{ completedQuoteTotal | number:'1.2-2' }}</strong>
+      <small>{{ countOrders('Completed') }} orders</small>
+    </article>
+    <article class="stat-card">
+      <span>Awaiting Payment</span>
+      <strong>{{ countOrders('Awaiting payment') }}</strong>
+      <small>Verify GCash/PayPal</small>
+    </article>
+  </div>
+
+  <div class="orders-list" *ngIf="quotedOrders.length; else noShopEarnings">
+    <article class="shop-order-card" *ngFor="let order of quotedOrders">
+      <div class="order-card-top">
+        <div>
+          <span class="order-reference">PRT-{{ order.id.slice(-6).toUpperCase() }}</span>
+          <h3>{{ order.description }}</h3>
+          <p class="order-meta">{{ order.customerName }} · {{ order.createdAt | date }}</p>
+        </div>
+        <span class="status-pill" [ngClass]="statusClass(order.status)"><span></span>{{ order.status }}</span>
+      </div>
+      
+      <div class="order-card-bottom">
+        <strong class="quote-value">₱{{ order.quoteAmount | number:'1.2-2' }}</strong>
+        
+        <button class="text-link receipt-link" *ngIf="order.status === 'Completed'" (click)="openReceipt(order)">
+          <ion-icon name="receipt-outline"></ion-icon> View Receipt
+        </button>
+      </div>
+    </article>
+  </div>
+  
+  <ng-template #noShopEarnings>
+    <div class="empty-state">
+      <span class="empty-icon"><ion-icon name="wallet-outline"></ion-icon></span>
+      <h3>No earnings yet</h3>
+      <p>Completed orders and quotes will appear here.</p>
+    </div>
+  </ng-template>
+</section>
+
+<!-- SHOP RECEIPT MODAL -->
+<div class="modal-backdrop" *ngIf="selectedReceiptOrder" (click)="closeReceipt()">
+  <div class="receipt-modal" (click)="$event.stopPropagation()">
+    
+    <div class="receipt-header">
+      <ion-icon name="storefront-outline"></ion-icon>
+      <h2>Sales Receipt</h2>
+      <p>{{ selectedReceiptOrder.shopName }}</p>
+    </div>
+
+    <div class="receipt-body">
+      <div class="receipt-row">
+        <span>Reference:</span>
+        <strong>PRT-{{ selectedReceiptOrder.id.slice(-6).toUpperCase() }}</strong>
+      </div>
+      <div class="receipt-row">
+        <span>Date Paid:</span>
+        <strong>{{ selectedReceiptOrder.paymentVerifiedAt | date:'medium' }}</strong>
+      </div>
+      <div class="receipt-row">
+        <span>Customer:</span>
+        <strong>{{ selectedReceiptOrder.customerName }}</strong>
+      </div>
+      
+      <div class="receipt-divider"></div>
+      
+      <div class="receipt-item">
+        <strong>{{ selectedReceiptOrder.description }}</strong>
+        <span>{{ selectedReceiptOrder.quantity }} copies · {{ selectedReceiptOrder.specs }}</span>
+      </div>
+      
+      <div class="receipt-divider"></div>
+      
+      <div class="receipt-row total-row">
+        <span>Total Earned:</span>
+        <strong>₱{{ selectedReceiptOrder.quoteAmount | number:'1.2-2' }}</strong>
+      </div>
+      
+      <div class="receipt-payment-method">
+        <ion-icon name="checkmark-circle" style="color: #14815c;"></ion-icon>
+        Paid via {{ selectedReceiptOrder.paymentProvider === 'paypal_sandbox' ? 'PayPal' : 'GCash' }}
+      </div>
+    </div>
+
+    <div class="receipt-footer">
+      <button class="button button-secondary compact-button" (click)="closeReceipt()" style="width: 100%;">Close</button>
+    </div>
+
+  </div>
+</div>

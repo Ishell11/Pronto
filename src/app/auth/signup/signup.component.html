@@ -1,0 +1,40 @@
+<main class="auth-shell">
+  <ion-button fill="clear" class="back-button" aria-label="Back" (click)="back.emit()">
+    <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+  </ion-button>
+  <div class="auth-heading">
+    <span class="eyebrow">CREATE YOUR ACCOUNT</span>
+    <h1>Make it PRONTO.</h1>
+    <p>Print requests, updates and receipts. All in one place.</p>
+  </div>
+  <form class="auth-form" (ngSubmit)="submit()">
+    <label class="field"><span class="field-label">Full name</span><input name="name" [(ngModel)]="name" placeholder="Your name" autocomplete="name" required></label>
+    <div class="role-picker">
+      <span class="field-label">I want to join as a</span>
+      <div class="role-options">
+        <button type="button" class="role-option" [class.selected]="role === 'customer'" (click)="role = 'customer'"><ion-icon name="person-outline"></ion-icon>Customer</button>
+        <button type="button" class="role-option" [class.selected]="role === 'shop'" (click)="role = 'shop'"><ion-icon name="storefront-outline"></ion-icon>Print shop</button>
+      </div>
+    </div>
+    <label class="field">
+      <span class="field-label">Email address</span>
+      <span class="field-control"><input name="email" [(ngModel)]="email" type="email" placeholder="you@example.com" autocomplete="email" required><ion-icon name="mail-outline"></ion-icon></span>
+    </label>
+    <label class="field">
+      <span class="field-label">Password</span>
+      <span class="field-control"><input name="password" [(ngModel)]="password" [type]="showPassword ? 'text' : 'password'" placeholder="At least 6 characters" autocomplete="new-password" required><button type="button" class="inline-icon-button" (click)="showPassword = !showPassword" aria-label="Toggle password visibility"><ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon></button></span>
+      <span class="field-hint">Use at least 6 characters.</span>
+    </label>
+    <label class="field">
+      <span class="field-label">Confirm password</span>
+      <span class="field-control"><input name="confirmPassword" [(ngModel)]="confirmPassword" [type]="showPassword ? 'text' : 'password'" placeholder="Enter password again" autocomplete="new-password" required><ion-icon name="checkmark-circle-outline"></ion-icon></span>
+    </label>
+    <label class="check-row"><input type="checkbox" [(ngModel)]="acceptedTerms" name="acceptedTerms"><span>I agree to the Terms of Service and Privacy Policy.</span></label>
+    <div class="inline-error" role="alert" *ngIf="error">{{ error }}</div>
+    <ion-button type="submit" expand="block" class="gradient-button auth-submit" [disabled]="busy">
+      <ion-spinner *ngIf="busy" name="crescent"></ion-spinner>
+      <ng-container *ngIf="!busy">Create account</ng-container>
+    </ion-button>
+  </form>
+  <div class="auth-switch">Already have an account? <button class="text-link" (click)="signIn.emit()">Sign in</button></div>
+</main>

@@ -1,0 +1,126 @@
+<section class="content-section">
+  
+  <!-- HERO HEADER -->
+  <div class="customer-hero">
+    <div class="hero-text">
+      <span class="eyebrow text-white">LET'S GET IT PRINTED</span>
+      <h1>Hi, {{ profileName.split(' ')[0] }}.</h1>
+      <p>What are we printing today?</p>
+    </div>
+    
+    <button class="hero-add-btn" (click)="createOrder.emit()" aria-label="New Print Request">
+      <ion-icon name="add-outline"></ion-icon>
+    </button>
+
+    <div class="hero-icon-bg">
+      <ion-icon name="print-outline"></ion-icon>
+    </div>
+  </div>
+
+  <!-- SEARCH BAR WITH LOCATION BUTTON INSIDE -->
+  <div class="search-container">
+    <label class="search-box">
+      <ion-icon name="search-outline"></ion-icon>
+      <input [ngModel]="search" (ngModelChange)="searchChange.emit($event)" placeholder="Search print shops...">
+      <button type="button" class="locate-btn-inline" (click)="locate.emit()" [disabled]="locating" title="Use my location">
+        <ion-icon name="locate-outline"></ion-icon>
+      </button>
+    </label>
+    <p class="location-msg" *ngIf="locationMessage">{{ locationMessage }}</p>
+  </div>
+
+  <!-- ACTIVE ORDER -->
+  <ng-container *ngIf="latestOrder">
+    <div class="section-heading">
+      <h2>Active Order</h2>
+      <button type="button" class="text-link" (click)="showOrders.emit()">View all</button>
+    </div>
+    
+    <div class="active-order-card">
+      <div class="active-order-header">
+        <div>
+          <span class="order-reference">PRT-{{ latestOrder.id.slice(-6).toUpperCase() }}</span>
+          <h3>{{ latestOrder.description }}</h3>
+          <p class="order-meta">{{ latestOrder.shopName }} · {{ latestOrder.quantity }} {{ latestOrder.quantity === 1 ? 'copy' : 'copies' }}</p>
+        </div>
+        <span class="status-pill" [ngClass]="statusClass(latestOrder.status)"><span></span>{{ latestOrder.status }}</span>
+      </div>
+
+      <div class="quote-summary" *ngIf="latestOrder.quoteAmount">
+        <strong>Quote · ₱{{ latestOrder.quoteAmount | number:'1.2-2' }}</strong>
+        <p>{{ latestOrder.quoteNote || 'Quote from the print shop.' }}</p>
+      </div>
+      
+      <div class="quote-actions" *ngIf="latestOrder.status === 'Awaiting customer' && latestOrder.quoteAmount">
+        <button class="button button-primary compact-button" (click)="respondQuote.emit({ order: latestOrder!, accept: true })">Accept quote</button>
+        <button class="text-link" (click)="respondQuote.emit({ order: latestOrder!, accept: false })">Decline</button>
+      </div>
+      
+      <p class="order-meta" *ngIf="latestOrder.confirmedPickupAt" style="margin-top: 8px;">
+        <ion-icon name="calendar-outline"></ion-icon> Pickup: {{ latestOrder.confirmedPickupAt | date:'medium' }}
+      </p>
+
+      <div class="quote-summary" *ngIf="latestOrder.status === 'Awaiting payment'">
+        <strong>Payment Required · ₱{{ latestOrder.quoteAmount | number:'1.2-2' }}</strong>
+        <button class="button button-primary compact-button" *ngIf="!latestOrder.paymentSubmittedAt"
+          [disabled]="paypalBusyOrderId === latestOrder.id"
+          (click)="paypalCheckout.emit(latestOrder)">
+          {{ paypalBusyOrderId === latestOrder.id ? 'Connecting...' : 'Pay with PayPal' }}
+        </button>
+        
+        <ng-container *ngIf="!latestOrder.paypalOrderId && !latestOrder.paymentSubmittedAt">
+          <div class="manual-payment-box">
+            <ng-container *ngIf="shopForOrder(latestOrder.shopId) as shop">
+              <p *ngIf="shop.gcashNumber"><strong>GCash:</strong> {{ shop.gcashAccountName }} · {{ shop.gcashNumber }}</p>
+            </ng-container>
+            <label class="field"><span class="field-label">GCash Reference</span><input [(ngModel)]="paymentReference" placeholder="Enter reference" maxlength="100"></label>
+            <button class="button button-secondary compact-button" (click)="submitPayment.emit({order:latestOrder!,reference:paymentReference})">Submit Reference</button>
+          </div>
+        </ng-container>
+      </div>
+
+      <div class="quote-summary payment-status-box" *ngIf="latestOrder.paymentReference">
+        <strong>{{ latestOrder.paymentProvider === 'paypal_sandbox' ? 'PayPal' : 'GCash' }} · {{ latestOrder.paymentReference }}</strong>
+        <p>Submitted {{ latestOrder.paymentSubmittedAt | date:'short' }} · {{ latestOrder.paymentVerifiedAt ? 'Verified' : 'Waiting for verification' }}</p>
+      </div>
+
+      <div class="active-order-footer">
+        <button class="file-link" *ngIf="latestOrder.fileName" (click)="openFile.emit(latestOrder!)">
+          <ion-icon name="document-attach-outline"></ion-icon> File
+        </button>
+        <div style="display: flex; gap: 12px; margin-left: auto;">
+          <button class="text-link" *ngIf="latestOrder.status === 'New request'" (click)="editOrder.emit(latestOrder!)">Edit</button>
+          <button class="text-link" (click)="showOrders.emit()">Track</button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- NEARBY SHOPS (Wala nang awkward na location button sa ilalim) -->
+  <div class="section-heading" style="margin-top: 10px;">
+    <h2>Nearby Shops</h2>
+    <button type="button" class="text-link" (click)="findShops.emit()">View all</button>
+  </div>
+
+  <div class="shop-grid" *ngIf="visibleShops.length; else noShops">
+    <article class="shop-card" *ngFor="let shop of visibleShops.slice(0, 3)" (click)="openShopOrder.emit(shop)">
+      <span class="shop-card-icon"><ion-icon name="storefront-outline"></ion-icon></span>
+      <div class="shop-card-main">
+        <h3>{{ shop.name }}</h3>
+        <p><ion-icon name="location-outline"></ion-icon>{{ shop.city }}</p>
+        <p class="shop-services">{{ shop.services }}</p>
+        <div class="shop-card-status">
+          <span [class.open-label]="shop.open" [class.closed-label]="!shop.open">{{ shop.open ? 'Open for requests' : 'Temporarily closed' }}</span>
+        </div>
+      </div>
+    </article>
+  </div>
+  
+  <ng-template #noShops>
+    <div class="empty-state">
+      <span class="empty-icon"><ion-icon name="storefront-outline"></ion-icon></span>
+      <h3>No print shops found</h3>
+      <p>Local shops will appear here once they join PRONTO.</p>
+    </div>
+  </ng-template>
+</section>

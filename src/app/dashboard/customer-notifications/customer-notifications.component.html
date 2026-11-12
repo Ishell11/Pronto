@@ -1,0 +1,17 @@
+<section class="content-section">
+  <div class="notification-list" *ngIf="orders.length; else noNotifications">
+    <button class="notification-row" *ngFor="let order of orders" (click)="openOrders.emit()">
+      <span class="notification-dot"></span>
+      <span class="notification-row-copy"><strong>PRT-{{ order.id.slice(-6).toUpperCase() }} · {{ order.status }}</strong><small>{{ notificationText(order) }}</small></span>
+      <span class="notification-date">{{ order.createdAt | date }}</span>
+    </button>
+  </div>
+  
+  <ng-template #noNotifications>
+    <div class="empty-state">
+      <span class="empty-icon"><ion-icon name="notifications-outline"></ion-icon></span>
+      <h3>No updates yet</h3>
+      <p>Shop quotes and order status changes will appear here.</p>
+    </div>
+  </ng-template>
+</section>
